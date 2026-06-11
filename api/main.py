@@ -653,4 +653,12 @@ async def run_verdict_endpoint(request: dict):
         except Exception as e:
             yield f"data: {json_module.dumps({'type':'error','content':str(e)})}\n\n"
 
-    return StreamingResponse(stream(), media_type="text/event-stream")
+    return StreamingResponse(
+    stream(),
+    media_type="text/event-stream",
+    headers={
+        "Cache-Control": "no-cache",
+        "X-Accel-Buffering": "no",
+        "Connection": "keep-alive"
+    }
+)
