@@ -662,3 +662,11 @@ async def run_verdict_endpoint(request: dict):
         "Connection": "keep-alive"
     }
 )
+
+@app.post("/verdict/run/sync")
+async def run_verdict_sync(request: dict):
+    from verdict.ingest import ingest
+    from verdict.runner import run_verdict
+    case_input = await ingest(request.get("input", ""))
+    result = await run_verdict(case_input)
+    return result

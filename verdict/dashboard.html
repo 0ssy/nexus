@@ -273,51 +273,33 @@ My business partner has been secretly diverting clients to his new company for 3
     setStatus('RUNNING');
 
     try {
-      const resp = await fetch('/verdict/run', {
+      addEvent('info', 'NEXUS', 'Deliberation started — this may take 30-60 seconds...');
+      setStatus('RUNNING');
+
+      const resp = await fetch('/verdict/run/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input })
       });
 
       if (!resp.ok) throw new Error('Server error');
+      const result = await resp.json();
 
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value);
-        const lines = text.split('\n').filter(l => l.startsWith('data: '));
-
-        for (const line of lines) {
-          const data = JSON.parse(line.replace('data: ', ''));
-
-          if (data.type === 'agent_registered') {
-            updateAgents(data.count);
-            addEvent('info', 'AGENT', `${data.name} joined the deliberation`);
-          } else if (data.type === 'case_summary') {
-            addEvent('SYSTEM', 'INTAKE ANALYSIS', data.content);
-          } else if (data.type === 'integrity') {
-            addEvent('SYSTEM', 'CONTEXT INTEGRITY', data.content);
-          } else if (data.type === 'specialists') {
-            addEvent('info', 'RECRUITMENT', `Specialists recruited: ${data.skills.join(', ')}`);
-          } else if (data.type === 'POSITION') {
-            addEvent('POSITION', `${data.agent} — POSITION`, data.content);
-          } else if (data.type === 'CHALLENGE') {
-            addEvent('CHALLENGE', "DEVIL'S ADVOCATE — CHALLENGE", data.content);
-          } else if (data.type === 'RESPONSE') {
-            addEvent('RESPONSE', `${data.agent} — RESPONSE`, data.content);
-          } else if (data.type === 'VERDICT') {
-            addEvent('VERDICT', '⚖ FINAL VERDICT', data.content);
-            setStatus('COMPLETE');
-            updateAudit(data.audit_events || 0);
-          } else if (data.type === 'error') {
-            addEvent('CHALLENGE', 'ERROR', data.content);
-            setStatus('ERROR');
-          }
-        }
+      if (result.case_summary) addEvent('SYSTEM', 'INTAKE ANALYSIS', result.case_summary);
+      if (result.integrity) addEvent('SYSTEM', 'CONTEXT INTEGRITY', result.integrity);
+      if (result.specialists) addEvent('info', 'RECRUITMENT', `Specialists: ${result.specialists.join(', ')}`);
+      for (const pos of result.positions || []) {
+        addEvent('POSITION', `${pos.specialty.toUpperCase()} — POSITION`, pos.position);
+      }
+      if (result.challenge) addEvent('CHALLENGE', "DEVIL'S ADVOCATE — CHALLENGE", result.challenge);
+      for (const resp2 of result.responses || []) {
+        addEvent('RESPONSE', `${resp2.specialty.toUpperCase()} — RESPONSE`, resp2.response);
+      }
+      if (result.verdict) {
+        addEvent('VERDICT', '⚖ FINAL VERDICT', result.verdict);
+        setStatus('COMPLETE');
+        updateAudit(result.audit_events || 0);
+        updateAgents(result.agent_count || 0);
       }
     } catch (err) {
       addEvent('CHALLENGE', 'ERROR', err.message);
