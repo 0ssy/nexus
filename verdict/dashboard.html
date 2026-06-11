@@ -1,0 +1,335 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VERDICT — Live Deliberation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  /* Artistic canvas aesthetic with brown base typography */
+  body { 
+    background: #f4eae1; 
+    color: #4a2c11; 
+    font-family: 'Georgia', serif; 
+    padding: 15px;
+  }
+
+  /* Main wrapper giving the strict dashboard look with a solid black border */
+  .dashboard-wrapper {
+    border: 6px solid #111111;
+    border-radius: 12px;
+    background: #faf3eb;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    min-height: calc(100vh - 30px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    padding: 24px 30px;
+    border-bottom: 2px dashed #b59f83;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  .logo { 
+    font-size: 26px; 
+    font-weight: 900; 
+    letter-spacing: 3px; 
+    color: #2b1704; 
+    font-family: 'Times New Roman', serif;
+  }
+  .tagline { 
+    font-size: 11px; 
+    color: #705841; 
+    letter-spacing: 2px; 
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* Status dot tweaked to fit an artistic, vintage-ink look */
+  .status-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #8c2d19; display: inline-block;
+    margin-right: 8px; animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .container { 
+    display: grid; 
+    grid-template-columns: 1fr 2fr; 
+    gap: 24px; 
+    padding: 24px 30px; 
+    flex: 1;
+  }
+
+  /* Panels styled like watercolor/sketchbook framing cards */
+  .panel { 
+    background: #fdfaf6; 
+    border: 2px solid #333333; 
+    border-radius: 8px; 
+    overflow: hidden; 
+    box-shadow: 2px 2px 0px #333333;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .panel-header { 
+    padding: 14px 18px; 
+    border-bottom: 2px solid #333333; 
+    font-size: 12px; 
+    letter-spacing: 2px; 
+    color: #4a2c11; 
+    font-weight: bold; 
+    background: #efe4d4;
+    text-transform: uppercase;
+  }
+
+  /* Input Panel */
+  .input-panel textarea {
+    flex: 1; background: #fffcf9; border: none; color: #4a2c11;
+    padding: 18px; font-size: 14px; resize: none; outline: none;
+    font-family: 'Georgia', serif; line-height: 1.6;
+  }
+  .input-panel textarea::placeholder { color: #a8927c; font-style: italic; }
+  .input-footer { padding: 16px 18px; border-top: 1px dashed #b59f83; background: #fdfaf6; }
+  .hint { font-size: 12px; color: #705841; margin-bottom: 12px; font-style: italic; }
+
+  /* Artistic earthy CTA Button styling */
+  button {
+    width: 100%; padding: 14px; border: 2px solid #111; border-radius: 6px;
+    font-size: 13px; font-weight: bold; cursor: pointer;
+    letter-spacing: 2px; transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  #runBtn { background: #b05c36; color: #fff; box-shadow: 0 3px 0 #333; }
+  #runBtn:hover { background: #964b27; transform: translateY(-1px); box-shadow: 0 4px 0 #333; }
+  #runBtn:active { transform: translateY(2px); box-shadow: 0 1px 0 #333; }
+  #runBtn:disabled { background: #dcd1c4; color: #8a7e71; border-color: #8a7e71; cursor: not-allowed; box-shadow: none; transform: none; }
+
+  /* Deliberation Feed elements */
+  #feed { 
+    flex: 1; 
+    overflow-y: auto; 
+    padding: 18px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 14px; 
+    background: #fbf6f0;
+  }
+
+  /* Style custom scrollbar to complement parchment theme */
+  #feed::-webkit-scrollbar { width: 8px; }
+  #feed::-webkit-scrollbar-track { background: #fbf6f0; }
+  #feed::-webkit-scrollbar-thumb { background: #cdbfae; border-radius: 4px; }
+
+  .event {
+    padding: 16px 18px; border-radius: 6px;
+    border: 2px solid #333333;
+    box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.05);
+    background: #ffffff; font-size: 14px; line-height: 1.6;
+    animation: fadeIn 0.4s ease;
+  }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  .event-label { font-size: 11px; letter-spacing: 1.5px; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; }
+  .event-content { color: #3d250e; white-space: pre-wrap; font-family: 'Georgia', serif; }
+
+  /* Rich, artistic warm tones for agent event classifications */
+  .type-SYSTEM    { background: #f2edf2; border-color: #6d5b6d; }
+  .type-POSITION  { background: #eef7f4; border-color: #2d6a4f; }
+  .type-CHALLENGE { background: #fdf0f0; border-color: #ba3c3c; }
+  .type-RESPONSE  { background: #f3f0fd; border-color: #5c4ca8; }
+  .type-VERDICT   { background: #fef9ed; border-color: #c97d16; border-width: 3px; box-shadow: 4px 4px 0px rgba(199,125,22,0.15); }
+  .type-info      { background: #faf8f5; border-color: #a89886; border-style: dashed; }
+
+  .label-SYSTEM    { color: #6d5b6d; }
+  .label-POSITION  { color: #2d6a4f; }
+  .label-CHALLENGE { color: #ba3c3c; }
+  .label-RESPONSE  { color: #5c4ca8; }
+  .label-VERDICT   { color: #b86d09; font-size: 12px; }
+  .label-info      { color: #8a7966; }
+
+  /* Dashboard Analytics Bar styling */
+  .stats-bar {
+    padding: 14px 18px; border-top: 2px solid #333333;
+    display: flex; gap: 28px; font-size: 11px; color: #5c4733;
+    background: #efe4d4; font-weight: bold; letter-spacing: 1px;
+  }
+  .stat-val { color: #b05c36; }
+
+  .empty-state {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 14px; color: #a18a74;
+  }
+  .empty-state .big { font-size: 54px; opacity: 0.7; }
+  .empty-state p { font-size: 12px; letter-spacing: 2px; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div class="dashboard-wrapper">
+
+  <header>
+    <div>
+      <div class="logo">VERDICT</div>
+      <div class="tagline">Multi-Agent Deliberation System</div>
+    </div>
+    <div style="font-size:12px; font-weight: bold; color: #4a2c11; letter-spacing: 1px;">
+      <span class="status-dot"></span>NEXUS CONNECTED
+    </div>
+  </header>
+
+  <div class="container">
+
+    <div class="panel input-panel">
+      <div class="panel-header">Case Input</div>
+      <textarea id="caseInput" placeholder="Paste a Reddit URL or describe a crisis situation...
+
+Example:
+https://reddit.com/r/legaladvice/...
+
+Or paste the situation directly:
+My business partner has been secretly diverting clients to his new company for 3 months..."></textarea>
+      <div class="input-footer">
+        <div class="hint">Supports Reddit URLs or raw text input</div>
+        <button id="runBtn" onclick="runVerdict()">Run Verdict</button>
+      </div>
+    </div>
+
+    <div class="panel deliberation-panel">
+      <div class="panel-header">Live Deliberation Dashboard</div>
+      <div id="feed">
+        <div class="empty-state">
+          <div class="big">⚖</div>
+          <p>AWAITING CASE INPUT</p>
+        </div>
+      </div>
+      <div class="stats-bar">
+        <div>AGENTS: <span id="agentCount" class="stat-val">0</span></div>
+        <div>MESSAGES: <span id="msgCount" class="stat-val">0</span></div>
+        <div>AUDIT EVENTS: <span id="auditCount" class="stat-val">0</span></div>
+        <div>STATUS: <span id="statusText" class="stat-val">IDLE</span></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  let msgCount = 0;
+  let agentCount = 0;
+
+  function addEvent(type, label, content) {
+    const feed = document.getElementById('feed');
+
+    // Remove empty state
+    const empty = feed.querySelector('.empty-state');
+    if (empty) empty.remove();
+
+    const div = document.createElement('div');
+    div.className = `event type-${type}`;
+    div.innerHTML = `
+      <div class="event-label label-${type}">${label}</div>
+      <div class="event-content">${content}</div>
+    `;
+    feed.appendChild(div);
+    feed.scrollTop = feed.scrollHeight;
+
+    if (type !== 'info') {
+      msgCount++;
+      document.getElementById('msgCount').textContent = msgCount;
+    }
+  }
+
+  function setStatus(text) {
+    document.getElementById('statusText').textContent = text;
+  }
+
+  function updateAgents(n) {
+    agentCount = n;
+    document.getElementById('agentCount').textContent = n;
+  }
+
+  function updateAudit(n) {
+    document.getElementById('auditCount').textContent = n;
+  }
+
+  async function runVerdict() {
+    const input = document.getElementById('caseInput').value.trim();
+    if (!input) return;
+
+    const btn = document.getElementById('runBtn');
+    btn.disabled = true;
+    btn.textContent = 'Deliberating...';
+    msgCount = 0;
+    document.getElementById('msgCount').textContent = 0;
+    document.getElementById('feed').innerHTML = '';
+    setStatus('RUNNING');
+
+    try {
+      const resp = await fetch('/verdict/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input })
+      });
+
+      if (!resp.ok) throw new Error('Server error');
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value);
+        const lines = text.split('\n').filter(l => l.startsWith('data: '));
+
+        for (const line of lines) {
+          const data = JSON.parse(line.replace('data: ', ''));
+
+          if (data.type === 'agent_registered') {
+            updateAgents(data.count);
+            addEvent('info', 'AGENT', `${data.name} joined the deliberation`);
+          } else if (data.type === 'case_summary') {
+            addEvent('SYSTEM', 'INTAKE ANALYSIS', data.content);
+          } else if (data.type === 'integrity') {
+            addEvent('SYSTEM', 'CONTEXT INTEGRITY', data.content);
+          } else if (data.type === 'specialists') {
+            addEvent('info', 'RECRUITMENT', `Specialists recruited: ${data.skills.join(', ')}`);
+          } else if (data.type === 'POSITION') {
+            addEvent('POSITION', `${data.agent} — POSITION`, data.content);
+          } else if (data.type === 'CHALLENGE') {
+            addEvent('CHALLENGE', "DEVIL'S ADVOCATE — CHALLENGE", data.content);
+          } else if (data.type === 'RESPONSE') {
+            addEvent('RESPONSE', `${data.agent} — RESPONSE`, data.content);
+          } else if (data.type === 'VERDICT') {
+            addEvent('VERDICT', '⚖ FINAL VERDICT', data.content);
+            setStatus('COMPLETE');
+            updateAudit(data.audit_events || 0);
+          } else if (data.type === 'error') {
+            addEvent('CHALLENGE', 'ERROR', data.content);
+            setStatus('ERROR');
+          }
+        }
+      }
+    } catch (err) {
+      addEvent('CHALLENGE', 'ERROR', err.message);
+      setStatus('ERROR');
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Run Verdict';
+  }
+</script>
+
+</body>
+</html>
+
+```
