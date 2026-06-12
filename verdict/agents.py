@@ -29,8 +29,8 @@ class VerdictAgent:
         self.skills = skills
         self.description = description
         import os
-nexus_url = os.getenv("NEXUS_INTERNAL_URL", "http://localhost:8000")
-self.nexus = NexusClient(base_url=nexus_url)
+        nexus_url = os.getenv("NEXUS_INTERNAL_URL", "http://localhost:8000")
+        self.nexus = NexusClient(base_url=nexus_url)
         self.token = None
 
     async def register(self):
