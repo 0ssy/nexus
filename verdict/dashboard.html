@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,16 +7,17 @@
 <title>VERDICT — Live Deliberation</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  
-  /* Artistic canvas aesthetic with brown base typography */
-  body { 
-    background: #f4eae1; 
-    color: #4a2c11; 
-    font-family: 'Georgia', serif; 
+
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+  body {
+    background: #f4eae1;
+    color: #4a2c11;
+    font-family: 'Georgia', serif;
     padding: 15px;
+    min-height: 100vh;
   }
 
-  /* Main wrapper giving the strict dashboard look with a solid black border */
   .dashboard-wrapper {
     border: 6px solid #111111;
     border-radius: 12px;
@@ -29,63 +29,77 @@
   }
 
   header {
-    padding: 24px 30px;
+    padding: 18px 20px;
     border-bottom: 2px dashed #b59f83;
     display: flex;
     justify-content: space-between;
     align-items: center;
     background: rgba(255, 255, 255, 0.3);
+    flex-wrap: wrap;
+    gap: 10px;
   }
 
-  .logo { 
-    font-size: 26px; 
-    font-weight: 900; 
-    letter-spacing: 3px; 
-    color: #2b1704; 
+  .logo {
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: #2b1704;
     font-family: 'Times New Roman', serif;
   }
-  .tagline { 
-    font-size: 11px; 
-    color: #705841; 
-    letter-spacing: 2px; 
+  .tagline {
+    font-size: 10px;
+    color: #705841;
+    letter-spacing: 2px;
     text-transform: uppercase;
     margin-top: 4px;
   }
 
-  /* Status dot tweaked to fit an artistic, vintage-ink look */
+  .status-pill {
+    font-size: 11px;
+    font-weight: bold;
+    color: #4a2c11;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+  }
+
   .status-dot {
     width: 10px; height: 10px; border-radius: 50%;
     background: #8c2d19; display: inline-block;
     margin-right: 8px; animation: pulse 2s infinite;
+    flex-shrink: 0;
   }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-  .container { 
-    display: grid; 
-    grid-template-columns: 1fr 2fr; 
-    gap: 24px; 
-    padding: 24px 30px; 
+  /* ── Layout: grid on desktop, stacked on mobile ── */
+  .container {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
+    padding: 20px;
     flex: 1;
+    min-height: 0;
   }
 
-  /* Panels styled like watercolor/sketchbook framing cards */
-  .panel { 
-    background: #fdfaf6; 
-    border: 2px solid #333333; 
-    border-radius: 8px; 
-    overflow: hidden; 
+  .panel {
+    background: #fdfaf6;
+    border: 2px solid #333333;
+    border-radius: 8px;
+    overflow: hidden;
     box-shadow: 2px 2px 0px #333333;
     display: flex;
     flex-direction: column;
+    min-height: 0;
   }
-  
-  .panel-header { 
-    padding: 14px 18px; 
-    border-bottom: 2px solid #333333; 
-    font-size: 12px; 
-    letter-spacing: 2px; 
-    color: #4a2c11; 
-    font-weight: bold; 
+
+  .panel-header {
+    padding: 12px 16px;
+    border-bottom: 2px solid #333333;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: #4a2c11;
+    font-weight: bold;
     background: #efe4d4;
     text-transform: uppercase;
   }
@@ -93,54 +107,59 @@
   /* Input Panel */
   .input-panel textarea {
     flex: 1; background: #fffcf9; border: none; color: #4a2c11;
-    padding: 18px; font-size: 14px; resize: none; outline: none;
+    padding: 16px; font-size: 16px; resize: none; outline: none;
     font-family: 'Georgia', serif; line-height: 1.6;
+    min-height: 160px;
+    -webkit-appearance: none;
   }
   .input-panel textarea::placeholder { color: #a8927c; font-style: italic; }
-  .input-footer { padding: 16px 18px; border-top: 1px dashed #b59f83; background: #fdfaf6; }
+  .input-footer { padding: 14px 16px; border-top: 1px dashed #b59f83; background: #fdfaf6; }
   .hint { font-size: 12px; color: #705841; margin-bottom: 12px; font-style: italic; }
 
-  /* Artistic earthy CTA Button styling */
   button {
-    width: 100%; padding: 14px; border: 2px solid #111; border-radius: 6px;
-    font-size: 13px; font-weight: bold; cursor: pointer;
+    width: 100%; padding: 16px; border: 2px solid #111; border-radius: 6px;
+    font-size: 14px; font-weight: bold; cursor: pointer;
     letter-spacing: 2px; transition: all 0.2s;
     text-transform: uppercase;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   #runBtn { background: #b05c36; color: #fff; box-shadow: 0 3px 0 #333; }
   #runBtn:hover { background: #964b27; transform: translateY(-1px); box-shadow: 0 4px 0 #333; }
   #runBtn:active { transform: translateY(2px); box-shadow: 0 1px 0 #333; }
   #runBtn:disabled { background: #dcd1c4; color: #8a7e71; border-color: #8a7e71; cursor: not-allowed; box-shadow: none; transform: none; }
 
-  /* Deliberation Feed elements */
-  #feed { 
-    flex: 1; 
-    overflow-y: auto; 
-    padding: 18px; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 14px; 
+  /* Deliberation Feed */
+  #feed {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
     background: #fbf6f0;
+    min-height: 240px;
   }
 
-  /* Style custom scrollbar to complement parchment theme */
   #feed::-webkit-scrollbar { width: 8px; }
   #feed::-webkit-scrollbar-track { background: #fbf6f0; }
   #feed::-webkit-scrollbar-thumb { background: #cdbfae; border-radius: 4px; }
 
   .event {
-    padding: 16px 18px; border-radius: 6px;
+    padding: 14px 16px; border-radius: 6px;
     border: 2px solid #333333;
     box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.05);
     background: #ffffff; font-size: 14px; line-height: 1.6;
     animation: fadeIn 0.4s ease;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
   @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
   .event-label { font-size: 11px; letter-spacing: 1.5px; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; }
   .event-content { color: #3d250e; white-space: pre-wrap; font-family: 'Georgia', serif; }
 
-  /* Rich, artistic warm tones for agent event classifications */
   .type-SYSTEM    { background: #f2edf2; border-color: #6d5b6d; }
   .type-POSITION  { background: #eef7f4; border-color: #2d6a4f; }
   .type-CHALLENGE { background: #fdf0f0; border-color: #ba3c3c; }
@@ -155,20 +174,67 @@
   .label-VERDICT   { color: #b86d09; font-size: 12px; }
   .label-info      { color: #8a7966; }
 
-  /* Dashboard Analytics Bar styling */
+  /* Stats bar */
   .stats-bar {
-    padding: 14px 18px; border-top: 2px solid #333333;
-    display: flex; gap: 28px; font-size: 11px; color: #5c4733;
-    background: #efe4d4; font-weight: bold; letter-spacing: 1px;
+    padding: 12px 16px; border-top: 2px solid #333333;
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    font-size: 10px; color: #5c4733;
+    background: #efe4d4; font-weight: bold; letter-spacing: 0.5px;
   }
+  .stats-bar > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .stat-val { color: #b05c36; }
 
   .empty-state {
     flex: 1; display: flex; align-items: center; justify-content: center;
     flex-direction: column; gap: 14px; color: #a18a74;
+    text-align: center; padding: 20px;
   }
-  .empty-state .big { font-size: 54px; opacity: 0.7; }
+  .empty-state .big { font-size: 48px; opacity: 0.7; }
   .empty-state p { font-size: 12px; letter-spacing: 2px; font-weight: bold; }
+
+  /* ── Tablet ── */
+  @media (max-width: 900px) {
+    .container {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .input-panel textarea { min-height: 130px; }
+    .deliberation-panel #feed { min-height: 320px; max-height: 60vh; }
+  }
+
+  /* ── Mobile ── */
+  @media (max-width: 540px) {
+    body { padding: 8px; }
+    .dashboard-wrapper { border-width: 4px; border-radius: 8px; min-height: calc(100vh - 16px); }
+    header { padding: 14px 14px; }
+    .logo { font-size: 20px; letter-spacing: 2px; }
+    .tagline { font-size: 9px; letter-spacing: 1px; }
+    .status-pill { font-size: 10px; }
+    .container { padding: 12px; gap: 12px; }
+    .panel-header { font-size: 10px; padding: 10px 12px; }
+    .input-panel textarea { font-size: 15px; padding: 12px; min-height: 110px; }
+    .input-footer { padding: 12px; }
+    button { padding: 14px; font-size: 13px; }
+    #feed { padding: 12px; gap: 10px; min-height: 260px; max-height: 55vh; }
+    .event { padding: 12px; font-size: 13px; }
+    .event-content { font-size: 13px; }
+    .stats-bar {
+      grid-template-columns: repeat(2, 1fr);
+      font-size: 10px;
+      padding: 10px 12px;
+      gap: 6px 10px;
+    }
+    .empty-state .big { font-size: 38px; }
+    .empty-state p { font-size: 11px; }
+  }
+
+  /* Very small phones */
+  @media (max-width: 360px) {
+    .logo { font-size: 18px; }
+    .tagline { display: none; }
+    .stats-bar { grid-template-columns: 1fr 1fr; font-size: 9px; }
+  }
 </style>
 </head>
 <body>
@@ -180,7 +246,7 @@
       <div class="logo">VERDICT</div>
       <div class="tagline">Multi-Agent Deliberation System</div>
     </div>
-    <div style="font-size:12px; font-weight: bold; color: #4a2c11; letter-spacing: 1px;">
+    <div class="status-pill">
       <span class="status-dot"></span>NEXUS CONNECTED
     </div>
   </header>
@@ -213,7 +279,7 @@ My business partner has been secretly diverting clients to his new company for 3
       <div class="stats-bar">
         <div>AGENTS: <span id="agentCount" class="stat-val">0</span></div>
         <div>MESSAGES: <span id="msgCount" class="stat-val">0</span></div>
-        <div>AUDIT EVENTS: <span id="auditCount" class="stat-val">0</span></div>
+        <div>AUDIT: <span id="auditCount" class="stat-val">0</span></div>
         <div>STATUS: <span id="statusText" class="stat-val">IDLE</span></div>
       </div>
     </div>
@@ -229,7 +295,6 @@ My business partner has been secretly diverting clients to his new company for 3
   function addEvent(type, label, content) {
     const feed = document.getElementById('feed');
 
-    // Remove empty state
     const empty = feed.querySelector('.empty-state');
     if (empty) empty.remove();
 
@@ -274,16 +339,13 @@ My business partner has been secretly diverting clients to his new company for 3
     setStatus('RUNNING');
 
     try {
-      addEvent('info', 'NEXUS', 'Deliberation started — this may take 30-60 seconds...');
-      setStatus('RUNNING');
+      addEvent('info', 'NEXUS', 'Deliberation started — this usually takes 30-60 seconds. Please wait...');
 
       const resp = await fetch('/verdict/run/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input })
       });
-
-
 
       if (!resp.ok) throw new Error('Server error');
       const result = await resp.json();
@@ -316,5 +378,3 @@ My business partner has been secretly diverting clients to his new company for 3
 
 </body>
 </html>
-
-```
