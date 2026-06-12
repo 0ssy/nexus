@@ -367,7 +367,7 @@ My business partner has been secretly diverting clients to his new company for 3
         updateAgents(result.agent_count || 0);
       }
     } catch (err) {
-      addEvent('CHALLENGE', 'ERROR', err.message);
+      addEvent('CHALLENGE', 'TEMPORARILY UNAVAILABLE', "We've hit today's AI usage limit. This resets daily — please try again in 20-30 minutes. (This means people are actually using it, which is a good sign!)");
       setStatus('ERROR');
     }
 

@@ -98,6 +98,8 @@ async def run_verdict(case_input: str):
         error = f"Recruitment failed: {e}"
         print(f"ERROR: {error}")
         results["errors"].append(error)
+        if "rate_limit" in str(e) or "429" in str(e):
+            results["verdict"] = "We've hit today's AI usage limit (Groq free tier resets daily). Please try again later — this is a good sign, it means people are using it!"
         return results
 
     # ── Step 5: Specialist Positions ─────────────────────
