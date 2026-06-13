@@ -2,6 +2,7 @@ import asyncpg
 import redis.asyncio as aioredis
 from core.types import Config
 import json
+import os
 from pathlib import Path
 
 _db_pool = None
@@ -11,12 +12,13 @@ _schema_initialized = False
 async def get_db():
     global _db_pool, _schema_initialized
     if _db_pool is None:
+        _ssl_mode = "require" if "railway" in Config.DATABASE_URL or os.getenv("RAILWAY_ENVIRONMENT") else None
         _db_pool = await asyncpg.create_pool(
-    Config.DATABASE_URL,
-    min_size=2,
-    max_size=10,
-    ssl="require"
-)
+            Config.DATABASE_URL,
+            min_size=2,
+            max_size=10,
+            ssl=_ssl_mode
+        )
     if not _schema_initialized:
         async with _db_pool.acquire() as conn:
             schema_path = Path(__file__).resolve().parents[1] / "db" / "schema.sql"

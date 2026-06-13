@@ -3,23 +3,45 @@ import secrets
 from groq import Groq
 from sdk.nexus_client import NexusClient
 from dotenv import load_dotenv
+import httpx as _httpx
 load_dotenv()
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
 def llm(system: str, user: str) -> str:
-    response = client.chat.completions.create(
-        model=GROQ_MODEL,
-        messages=[
-            {"role": "system", "content": system},
-            {"role": "user", "content": user}
-        ],
-        temperature=0.7,
-        max_tokens=1024
-    )
-    content = response.choices[0].message.content
-    return content if content is not None else ""
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user}
+            ],
+            temperature=0.7,
+            max_tokens=1024
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        if "429" in str(e) or "rate_limit" in str(e):
+            print(f"[FALLBACK] Groq rate limited, using local Ollama model...")
+            try:
+                resp = _httpx.post(
+                    "http://localhost:11434/api/chat",
+                    json={
+                        "model": "llama3.1:8b",
+                        "messages": [
+                            {"role": "system", "content": system},
+                            {"role": "user", "content": user}
+                        ],
+                        "stream": False
+                    },
+                    timeout=120.0
+                )
+                resp.raise_for_status()
+                return resp.json()["message"]["content"]
+            except Exception as fallback_error:
+                raise Exception(f"Both Groq and local fallback failed: {fallback_error}")
+        raise
 
 # ── Base Agent ───────────────────────────────────────────
 class VerdictAgent:
