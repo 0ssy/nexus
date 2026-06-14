@@ -1,0 +1,30 @@
+[
+  {
+    "lead_id": "43704846",
+    "lead_title": "Ask HN: Built a SaaS API, but struggling with traction \u2013 advice?",
+    "lead_url": "https://news.ycombinator.com/item?id=43704846",
+    "capability": "engineering",
+    "reply_text": "\"Your comment about struggling with API key management and throttling limits caught my attention. I've seen similar issues in other SaaS APIs where improper rate limiting can lead to abuse and decreased visibility. Have you considered implementing a token bucket algorithm for rate limiting? This approach can help balance fair usage with scalability, making it easier for your API to attract users without compromising performance.\"",
+    "drafted_at": "2026-06-14T14:45:28.909254",
+    "status": "pending_owner_verification",
+    "owner_decision": "skipped",
+    "owner_notes": "Deferred by owner",
+    "posted_at": null,
+    "final_reply": null,
+    "decided_at": "2026-06-14T14:49:03.737683"
+  },
+  {
+    "lead_id": "43529402",
+    "lead_title": "Ask HN: Need Help with Go to Market Strategy",
+    "lead_url": "https://news.ycombinator.com/item?id=43529402",
+    "capability": "marketing",
+    "reply_text": "It sounds like you're struggling to find the right messaging for your platform. One thing that might be worth exploring is how to distill your unique value proposition into a single, clear statement - often referred to as an \"elevator pitch\". This can help you cut through the noise and resonate with your target audience more effectively.\n\nIf you'd like to discuss this further or share more about your current go-to-market efforts, I'm happy to chat.",
+    "drafted_at": "2026-06-14T14:46:05.036411",
+    "status": "approved",
+    "owner_decision": "approved",
+    "owner_notes": null,
+    "posted_at": null,
+    "final_reply": "It sounds like you're struggling to find the right messaging for your platform. One thing that might be worth exploring is how to distill your unique value proposition into a single, clear statement - often referred to as an \"elevator pitch\". This can help you cut through the noise and resonate with your target audience more effectively.\n\nIf you'd like to discuss this further or share more about your current go-to-market efforts, I'm happy to chat.",
+    "decided_at": "2026-06-14T14:49:35.380332"
+  }
+]
