@@ -198,11 +198,14 @@ def update_trust_score(agent_id: str, verdict: str):
         scores[agent_id]["total_verified"] += 1
     elif verdict == "rejected":
         scores[agent_id]["total_failed"] += 1
+    # needs_revision doesn't count as failed — just not verified yet
 
-    # Recalculate trust score
-    total = scores[agent_id]["total_claimed"]
+    # Trust score = verified / (verified + failed)
+    # needs_revision tasks don't penalize — they're work in progress
     verified = scores[agent_id]["total_verified"]
-    scores[agent_id]["trust_score"] = round(verified / total, 2) if total > 0 else 1.0
+    failed = scores[agent_id]["total_failed"]
+    denominator = verified + failed
+    scores[agent_id]["trust_score"] = round(verified / denominator, 2) if denominator > 0 else 1.0
 
     with open(TRUST_FILE, "w") as f:
         json.dump(scores, f, indent=2)
