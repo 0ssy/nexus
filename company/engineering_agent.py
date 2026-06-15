@@ -32,7 +32,7 @@ def llm(system: str, user: str) -> str:
                 ],
                 "stream": False
             },
-            timeout=180.0
+            timeout=300.0
         )
         resp.raise_for_status()
         return resp.json()["message"]["content"]
@@ -161,6 +161,9 @@ def run_engineering():
         return []
 
     print(f"\nEngineering leads: {len(engineering_leads)}\n")
+
+    print("    [→] Cooling down before Engineering (30s)...")
+    __import__("time").sleep(30)
 
     # Load existing tasks
     tasks = []

@@ -15,5 +15,53 @@
     "status": "pending_qa",
     "created_at": "2026-06-14T15:11:41.143939",
     "verified_at": "2026-06-14T15:13:26.147967"
+  },
+  {
+    "id": "task_40918152",
+    "agent_id": "engineering",
+    "lead_id": "40918152",
+    "title": "Browser Internal Audio Isolation",
+    "description": "Analyze browser mechanisms for isolating internal audio from microphone input. Provide a technical explanation and potential guidance on implementing similar functionality.",
+    "type": "analysis",
+    "language": "markdown",
+    "complexity": "medium",
+    "deliverable": "A markdown document explaining the analysis and insights gained",
+    "output": null,
+    "verification_status": "failed",
+    "verification_notes": "Ollama failed: timed out",
+    "status": "failed",
+    "created_at": "2026-06-14T21:10:54.723179"
+  },
+  {
+    "id": "task_43704846",
+    "agent_id": "engineering",
+    "lead_id": "43704846",
+    "title": "API Performance Analysis and Optimization",
+    "description": "Analyze the client's SaaS API performance, identify bottlenecks, and suggest optimization strategies to improve user acquisition and retention. Include A/B testing of different pricing tiers and integration with popular productivity tools.",
+    "type": "analysis",
+    "language": "python",
+    "complexity": "medium",
+    "deliverable": "Report detailing API performance analysis and suggested optimizations",
+    "output": null,
+    "verification_status": "failed",
+    "verification_notes": "Ollama failed: timed out",
+    "status": "failed",
+    "created_at": "2026-06-15T05:09:22.654443"
+  },
+  {
+    "id": "task_40918152",
+    "agent_id": "engineering",
+    "lead_id": "40918152",
+    "title": "Internal Audio Isolation Extension",
+    "description": "Design and implement a custom browser extension that isolates internal audio from microphone input, utilizing API integrations to address complex technical problems.",
+    "type": "code",
+    "language": "javascript",
+    "complexity": "medium",
+    "deliverable": "Custom browser extension code with API integration documentation",
+    "output": null,
+    "verification_status": "failed",
+    "verification_notes": "Ollama failed: timed out",
+    "status": "failed",
+    "created_at": "2026-06-15T05:12:57.689885"
   }
 ]
