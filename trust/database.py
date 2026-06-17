@@ -8,7 +8,7 @@ import asyncpg
 import asyncio
 import os
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -92,11 +92,11 @@ async def insert_signal(
     metadata: dict = None
 ) -> int:
     """Insert a signal for a business. Returns signal ID."""
-    # Ensure signal_date is timezone-aware
+    # Normalize signal_date — strip timezone for PostgreSQL TIMESTAMP column
     if signal_date is None:
-        signal_date = datetime.now(timezone.utc)
-    elif signal_date.tzinfo is None:
-        signal_date = signal_date.replace(tzinfo=timezone.utc)
+        signal_date = datetime.utcnow()
+    elif signal_date.tzinfo is not None:
+        signal_date = signal_date.replace(tzinfo=None)
 
     pool = await get_pool()
     async with pool.acquire() as conn:
