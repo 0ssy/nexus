@@ -114,6 +114,18 @@ async def insert_signal(
         )
         return row["id"]
 
+async def signal_exists(source_url: str) -> bool:
+    """Check if a signal from this URL already exists."""
+    if not source_url:
+        return False
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT id FROM signals WHERE source_url = $1 LIMIT 1",
+            source_url
+        )
+        return row is not None
+
 async def get_signal_weight(signal_type: str) -> float:
     """Get the algorithmic weight for a signal type."""
     pool = await get_pool()

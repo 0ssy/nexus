@@ -45,6 +45,18 @@ async def run_scorer():
         log(f"Scorer failed: {e}")
         return 0
 
+async def run_worldbank():
+    """Run World Bank collector."""
+    try:
+        log("Starting World Bank collector...")
+        from trust.collectors.worldbank import run_collector
+        count = await run_collector()
+        log(f"World Bank complete — {count} data points collected")
+        return count
+    except Exception as e:
+        log(f"World Bank failed: {e}")
+        return 0
+
 async def print_stats():
     """Print database statistics."""
     try:
@@ -64,8 +76,9 @@ async def run_cycle():
     log("TRUST LAYER — Starting Collection Cycle")
     log("="*50)
 
-    # Collect
+    # Collect from all sources
     await run_gdelt()
+    await run_worldbank()
 
     # Score
     await run_scorer()

@@ -94,31 +94,97 @@ def search_gdelt(query: str, country: str = None, max_records: int = 10) -> dict
         print(f"    [ERROR] GDELT search failed: {e}")
         return {}
 
+# Known non-business words to filter out
+NON_BUSINESS_WORDS = {
+    "the", "a", "an", "and", "or", "but", "in", "on", "at", "to",
+    "for", "of", "with", "by", "from", "up", "about", "into", "through",
+    "after", "before", "since", "during", "including", "until", "against",
+    "among", "throughout", "despite", "towards", "upon", "concerning",
+    "says", "said", "says", "report", "reports", "new", "year", "years",
+    "billion", "million", "deal", "sold", "sell", "buy", "buying",
+    "selling", "plan", "plans", "monday", "tuesday", "wednesday",
+    "thursday", "friday", "saturday", "sunday", "january", "february",
+    "march", "april", "may", "june", "july", "august", "september",
+    "october", "november", "december"
+}
+
+# Known company suffixes that confirm something is a business name
+COMPANY_SUFFIXES = {
+    "ltd", "limited", "inc", "incorporated", "corp", "corporation",
+    "llc", "plc", "gmbh", "sa", "ag", "bv", "nv", "pty",
+    "group", "holdings", "enterprises", "industries", "international",
+    "company", "co", "partners", "associates", "services", "solutions",
+    "technologies", "tech", "logistics", "trading", "wholesale",
+    "distribution", "supply", "supplies", "brands", "ventures"
+}
+
 def extract_business_name(title: str, query: str) -> str:
     """
-    Attempt to extract a business name from article title.
-    Falls back to a generic name based on the query.
+    Extract a real business name from an article title.
+    Returns None if no confident business name found.
     """
-    # Common patterns in business news titles
-    title_words = title.split()
+    if not title or len(title) < 5:
+        return None
 
-    # Look for capitalized sequences (likely company names)
-    company_candidates = []
+    # Skip non-Latin titles (Arabic, Chinese, etc.) — can't reliably extract
+    non_latin = sum(1 for c in title if ord(c) > 127)
+    if non_latin > len(title) * 0.3:
+        return None
+
+    words = title.split()
+    if not words:
+        return None
+
+    # Strategy 1: Look for known company suffix
+    title_lower = title.lower()
+    for suffix in COMPANY_SUFFIXES:
+        if f" {suffix}" in title_lower or f" {suffix}." in title_lower:
+            # Find the company name ending with this suffix
+            for i, word in enumerate(words):
+                if word.lower().rstrip(".,") == suffix:
+                    # Take up to 4 words before the suffix
+                    start = max(0, i - 4)
+                    candidate = " ".join(words[start:i+1])
+                    if len(candidate) > 3:
+                        return candidate.strip(".,")
+
+    # Strategy 2: Look for capitalized sequences of 2-4 words
+    candidates = []
     current = []
-    for word in title_words:
-        if word[0].isupper() if word else False:
-            current.append(word)
+    for word in words:
+        clean = word.strip(".,!?\"'()")
+        if (clean and
+            clean[0].isupper() and
+            clean.lower() not in NON_BUSINESS_WORDS and
+            len(clean) > 1 and
+            clean.isascii()):
+            current.append(clean)
         else:
             if len(current) >= 2:
-                company_candidates.append(" ".join(current))
+                candidates.append(" ".join(current))
             current = []
+    if len(current) >= 2:
+        candidates.append(" ".join(current))
 
-    if company_candidates:
-        # Return the longest candidate (most likely a company name)
-        return max(company_candidates, key=len)
+    if candidates:
+        # Prefer longer candidates (more specific company names)
+        best = max(candidates, key=len)
+        # Reject if too long (likely a sentence fragment)
+        if len(best.split()) <= 5:
+            return best
 
-    # Fallback — use first few words of title
-    return " ".join(title_words[:4]) if title_words else "Unknown Business"
+    # Strategy 3: Single prominent capitalized word (known brands)
+    for word in words:
+        clean = word.strip(".,!?\"'()")
+        if (clean and
+            clean[0].isupper() and
+            len(clean) > 3 and
+            clean.lower() not in NON_BUSINESS_WORDS and
+            clean.isascii() and
+            clean.isupper() is False):  # skip ALL CAPS words
+            return clean
+
+    return None
 
 def extract_country_from_article(article: dict, default_country: str) -> str:
     """Extract country from article metadata."""
@@ -142,8 +208,11 @@ async def process_article(
     if not title or len(title) < 10:
         return False
 
-    # Extract or infer business name
+    # Extract business name — skip article if no name found
     business_name = extract_business_name(title, "")
+    if not business_name:
+        return False  # skip articles where we can't identify a business
+
     article_country = extract_country_from_article(article, country)
 
     try:
@@ -168,6 +237,11 @@ async def process_article(
                 "seen_date": seendate
             }
         )
+
+        # Skip if already collected
+        from trust.database import signal_exists
+        if await signal_exists(url):
+            return False
 
         # Insert signal
         weight = await get_signal_weight(signal_type)
