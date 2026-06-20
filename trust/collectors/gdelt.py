@@ -56,7 +56,7 @@ COUNTRIES = [
     "Philippines", "Vietnam", "Bangladesh"
 ]
 
-def search_gdelt(query: str, country: str = None, max_records: int = 10) -> dict:
+def search_gdelt(query: str, country: str | None = None, max_records: int = 10) -> dict:
     """Search GDELT for news articles matching query."""
     full_query = query
     if country:
@@ -121,7 +121,7 @@ COMPANY_SUFFIXES = {
     "distribution", "supply", "supplies", "brands", "ventures"
 }
 
-def extract_business_name(title: str, query: str) -> str:
+def extract_business_name(title: str, query: str) -> str | None:
     """
     Extract a real business name from an article title.
     Returns None if no confident business name found.
@@ -316,7 +316,7 @@ async def run_collector(max_articles: int = 200):
                 total_failed += 1
 
         # Also search with country context for a few key markets
-        for country in COUNTRIES[:4]:  # top 4 to avoid rate limits
+        for country in COUNTRIES[:1]:  # only 1 country per query to avoid rate limits
             if total_processed >= max_articles:
                 break
 
@@ -335,7 +335,7 @@ async def run_collector(max_articles: int = 200):
                     total_failed += 1
 
         print(f"    Processed: {total_processed} total so far")
-        time.sleep(2)  # polite delay
+        time.sleep(5)  # polite delay
 
     # Final stats
     stats = await get_database_stats()
