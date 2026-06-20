@@ -13,14 +13,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("TRUST_DATABASE_URL") or os.getenv("DATABASE_URL")
 _pool = None
 
 async def get_pool():
     """Get or create database connection pool."""
     global _pool
     if _pool is None:
-        ssl_mode = "require" if DATABASE_URL and "railway" in DATABASE_URL else None
+        ssl_mode = "require" if DATABASE_URL and ("railway" in DATABASE_URL or "neon.tech" in DATABASE_URL) else None
         _pool = await asyncpg.create_pool(
             DATABASE_URL,
             min_size=2,
