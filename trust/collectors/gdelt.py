@@ -271,7 +271,7 @@ async def process_article(
         print(f"    [ERROR] Failed to process article: {e}")
         return False
 
-async def run_collector(max_articles: int = 200):
+async def run_collector(max_articles: int = 50):
     """
     Main collector function.
     Searches GDELT for business trust signals globally.
@@ -353,4 +353,4 @@ async def run_collector(max_articles: int = 200):
     return total_processed
 
 if __name__ == "__main__":
-    asyncio.run(run_collector(max_articles=200))
+    asyncio.run(run_collector(max_articles=50))

@@ -26,7 +26,7 @@ async def run_gdelt():
     try:
         log("Starting GDELT collector...")
         from trust.collectors.gdelt import run_collector
-        count = await run_collector(max_articles=100)
+        count = await run_collector(max_articles=50)
         log(f"GDELT complete — {count} articles processed")
         return count
     except Exception as e:
@@ -89,7 +89,7 @@ async def run_cycle():
     log("Cycle complete.")
 
 async def run_scheduler(
-    collection_interval_hours: int = 6,
+    collection_interval_hours: int = 12,
     run_immediately: bool = True
 ):
     """
@@ -125,6 +125,6 @@ async def run_scheduler(
 
 if __name__ == "__main__":
     asyncio.run(run_scheduler(
-        collection_interval_hours=6,
+        collection_interval_hours=12,
         run_immediately=True
     ))
