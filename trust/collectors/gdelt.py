@@ -97,65 +97,125 @@ def search_gdelt(query: str, country: str | None = None, max_records: int = 10) 
 
     return {}
 
-# Known non-business words to filter out
+# Words that are never part of a business name
 NON_BUSINESS_WORDS = {
     "the", "a", "an", "and", "or", "but", "in", "on", "at", "to",
     "for", "of", "with", "by", "from", "up", "about", "into", "through",
     "after", "before", "since", "during", "including", "until", "against",
     "among", "throughout", "despite", "towards", "upon", "concerning",
-    "says", "said", "says", "report", "reports", "new", "year", "years",
+    "says", "said", "report", "reports", "new", "year", "years",
     "billion", "million", "deal", "sold", "sell", "buy", "buying",
     "selling", "plan", "plans", "monday", "tuesday", "wednesday",
     "thursday", "friday", "saturday", "sunday", "january", "february",
     "march", "april", "may", "june", "july", "august", "september",
-    "october", "november", "december"
+    "october", "november", "december", "permanently", "ecological",
+    "crisis", "crisis", "center", "centre", "covers", "power",
+    "annual", "financial", "report", "company", "rusza", "centralny",
+    "rejestr", "call", "media", "group", "fund", "index", "market",
+    "markets", "stock", "stocks", "shares", "bank", "banking",
+    "government", "minister", "ministry", "president", "court",
+    "courts", "judge", "law", "legal", "police", "arrest", "charged",
+    "accused", "alleged", "reportedly", "sources", "according",
+    "announced", "statement", "release", "update", "breaking",
+    "exclusive", "analysis", "review", "outlook", "forecast",
+    "weekly", "monthly", "daily", "quarterly", "annual"
 }
 
-# Known company suffixes that confirm something is a business name
+# Suffixes that strongly confirm a business name
 COMPANY_SUFFIXES = {
     "ltd", "limited", "inc", "incorporated", "corp", "corporation",
     "llc", "plc", "gmbh", "sa", "ag", "bv", "nv", "pty",
     "group", "holdings", "enterprises", "industries", "international",
     "company", "co", "partners", "associates", "services", "solutions",
     "technologies", "tech", "logistics", "trading", "wholesale",
-    "distribution", "supply", "supplies", "brands", "ventures"
+    "distribution", "supply", "supplies", "brands", "ventures",
+    "capital", "investments", "management", "consulting", "media",
+    "energy", "water", "airlines", "airways", "motors", "foods",
+    "pharmaceuticals", "healthcare", "finance", "bank", "insurance"
 }
 
-def extract_business_name(title: str, query: str) -> str | None:
+# Patterns that are definitely NOT business names
+REJECT_PATTERNS = [
+    lambda n: len(n.split()) > 5,                    # too many words
+    lambda n: n.endswith(","),                         # ends with comma
+    lambda n: n.startswith(":"),                       # starts with colon
+    lambda n: n.startswith("on "),                     # starts with "on"
+    lambda n: n.lower().startswith("lost "),           # "Lost Money on..."
+    lambda n: n.lower().startswith("navigating "),     # "Navigating Insolvency..."
+    lambda n: n.lower().startswith("on "),             # "on Lucid Group"
+    lambda n: " on " in n.lower(),                     # "Money on Lucid"
+    lambda n: any(c.isdigit() for c in n),            # contains numbers
+    lambda n: n.lower() in NON_BUSINESS_WORDS,        # is a common word
+    lambda n: len([w for w in n.split()
+                   if w.lower() in NON_BUSINESS_WORDS]) > 1,  # multiple non-business words
+    lambda n: any(w.lower() in {
+        "insolvency", "bankruptcy", "fraud", "scam",
+        "crisis", "failure", "collapse", "trouble",
+        "money", "lost", "navigating", "publiczne",
+        "fiscal", "tribunal"
+    } for w in n.split()),                             # contains event words not company words
+    lambda n: len(n) < 3,                              # too short
+    lambda n: len(n) > 50,                             # too long
+    lambda n: n.count(" ") == 0 and n.islower(),      # single lowercase word
+    lambda n: "%" in n or "$" in n or "#" in n,       # contains symbols
+    lambda n: n.lower().startswith("http"),            # URL fragment
+]
+
+def passes_hard_rules(name: str) -> bool:
+    """Check if a name passes all hard rejection rules."""
+    if not name:
+        return False
+    for pattern in REJECT_PATTERNS:
+        try:
+            if pattern(name):
+                return False
+        except:
+            return False
+    return True
+
+def has_company_suffix(name: str) -> bool:
+    """Check if name contains a known company suffix."""
+    name_lower = name.lower()
+    for suffix in COMPANY_SUFFIXES:
+        if name_lower.endswith(suffix) or f" {suffix} " in name_lower:
+            return True
+    return False
+
+def extract_business_name(title: str, query: str) -> str:
     """
     Extract a real business name from an article title.
     Returns None if no confident business name found.
+    Stage 1: Hard rules filter.
+    Stage 2: Ollama confidence check (for borderline cases).
     """
     if not title or len(title) < 5:
         return None
 
-    # Skip non-Latin titles (Arabic, Chinese, etc.) — can't reliably extract
+    # Skip non-Latin titles
     non_latin = sum(1 for c in title if ord(c) > 127)
-    if non_latin > len(title) * 0.3:
+    if non_latin > len(title) * 0.2:
         return None
 
     words = title.split()
     if not words:
         return None
 
-    # Strategy 1: Look for known company suffix
+    # Strategy 1: Known company suffix — highest confidence
     title_lower = title.lower()
     for suffix in COMPANY_SUFFIXES:
-        if f" {suffix}" in title_lower or f" {suffix}." in title_lower:
-            # Find the company name ending with this suffix
+        if f" {suffix}" in title_lower:
             for i, word in enumerate(words):
-                if word.lower().rstrip(".,") == suffix:
-                    # Take up to 4 words before the suffix
+                if word.lower().rstrip(".,;") == suffix:
                     start = max(0, i - 4)
-                    candidate = " ".join(words[start:i+1])
-                    if len(candidate) > 3:
-                        return candidate.strip(".,")
+                    candidate = " ".join(words[start:i+1]).strip(".,;:()")
+                    if passes_hard_rules(candidate):
+                        return candidate
 
-    # Strategy 2: Look for capitalized sequences of 2-4 words
+    # Strategy 2: Capitalized sequence of 2-4 words
     candidates = []
     current = []
     for word in words:
-        clean = word.strip(".,!?\"'()")
+        clean = word.strip(".,!?\"'();:-")
         if (clean and
             clean[0].isupper() and
             clean.lower() not in NON_BUSINESS_WORDS and
@@ -163,31 +223,69 @@ def extract_business_name(title: str, query: str) -> str | None:
             clean.isascii()):
             current.append(clean)
         else:
-            if len(current) >= 2:
-                candidates.append(" ".join(current))
+            if 2 <= len(current) <= 4:
+                candidate = " ".join(current)
+                if passes_hard_rules(candidate):
+                    candidates.append(candidate)
             current = []
-    if len(current) >= 2:
-        candidates.append(" ".join(current))
+    if 2 <= len(current) <= 4:
+        candidate = " ".join(current)
+        if passes_hard_rules(candidate):
+            candidates.append(candidate)
 
     if candidates:
-        # Prefer longer candidates (more specific company names)
+        # Prefer candidates with company suffixes
+        for c in candidates:
+            if has_company_suffix(c):
+                return c
+        # Otherwise return longest candidate
         best = max(candidates, key=len)
-        # Reject if too long (likely a sentence fragment)
-        if len(best.split()) <= 5:
+        if passes_hard_rules(best):
             return best
 
-    # Strategy 3: Single prominent capitalized word (known brands)
+    # Strategy 3: Single well-known brand (all caps or title case, 4+ chars)
     for word in words:
-        clean = word.strip(".,!?\"'()")
+        clean = word.strip(".,!?\"'();:-")
         if (clean and
+            len(clean) >= 4 and
             clean[0].isupper() and
-            len(clean) > 3 and
             clean.lower() not in NON_BUSINESS_WORDS and
             clean.isascii() and
-            clean.isupper() is False):  # skip ALL CAPS words
-            return clean
+            not clean.isupper() and  # skip ALL CAPS words
+            clean.isalpha()):        # only letters, no numbers/symbols
+            if passes_hard_rules(clean):
+                return clean
 
     return None
+
+def verify_business_name_with_ollama(name: str) -> bool:
+    """Stage 2 Ollama verification — stricter prompt."""
+    try:
+        import httpx
+        resp = httpx.post(
+            "http://localhost:11434/api/chat",
+            json={
+                "model": "llama3.1:8b",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You validate business names. Answer only YES or NO. Be strict — only answer YES for clearly real company names like 'Apple Inc', 'Thames Water', 'Banco Master'. Answer NO for anything that looks like a phrase, sentence fragment, or non-business word."
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Is '{name}' a real registered company or business name? YES or NO only."
+                    }
+                ],
+                "stream": False
+            },
+            timeout=15.0
+        )
+        if resp.status_code == 200:
+            answer = resp.json()["message"]["content"].strip().upper()
+            return answer.startswith("YES")
+    except:
+        pass
+    return False  # default to REJECTING if Ollama unavailable
 
 def extract_country_from_article(article: dict, default_country: str) -> str:
     """Extract country from article metadata."""
@@ -211,10 +309,16 @@ async def process_article(
     if not title or len(title) < 10:
         return False
 
-    # Extract business name — skip article if no name found
+    # Stage 1: Extract and hard-filter business name
     business_name = extract_business_name(title, "")
     if not business_name:
-        return False  # skip articles where we can't identify a business
+        return False
+
+    # Stage 2: Ollama verification for borderline names
+    # Only verify if name doesn't have a clear company suffix
+    if not has_company_suffix(business_name):
+        if not verify_business_name_with_ollama(business_name):
+            return False
 
     article_country = extract_country_from_article(article, country)
 
