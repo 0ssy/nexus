@@ -57,10 +57,7 @@ COUNTRIES = [
 ]
 
 def search_gdelt(query: str, country: str = None, max_records: int = 10) -> dict:
-    """
-    Search GDELT for news articles matching query.
-    Returns structured results.
-    """
+    """Search GDELT for news articles matching query."""
     full_query = query
     if country:
         full_query = f"{query} {country}"
@@ -70,29 +67,35 @@ def search_gdelt(query: str, country: str = None, max_records: int = 10) -> dict
         "mode": "artlist",
         "maxrecords": max_records,
         "format": "json",
-        "timespan": "7d",  # last 7 days
+        "timespan": "7d",
         "sort": "datedesc"
     }
 
-    try:
-        resp = requests.get(
-            BASE_URL,
-            params=params,
-            headers=HEADERS,
-            timeout=20
-        )
-        if resp.status_code == 200:
-            return resp.json()
-        elif resp.status_code == 429:
-            print(f"    [RATE LIMIT] Waiting 30 seconds...")
-            time.sleep(30)
+    for attempt in range(3):  # retry up to 3 times
+        try:
+            resp = requests.get(
+                BASE_URL,
+                params=params,
+                headers=HEADERS,
+                timeout=30,
+                allow_redirects=True
+            )
+            if resp.status_code == 200:
+                return resp.json()
+            elif resp.status_code == 429:
+                print(f"    [RATE LIMIT] Waiting 60 seconds...")
+                time.sleep(60)
+            else:
+                print(f"    [WARNING] GDELT returned {resp.status_code}")
+                return {}
+        except requests.exceptions.Timeout:
+            print(f"    [TIMEOUT] Attempt {attempt+1}/3 timed out, retrying...")
+            time.sleep(5)
+        except Exception as e:
+            print(f"    [ERROR] GDELT search failed: {e}")
             return {}
-        else:
-            print(f"    [WARNING] GDELT returned {resp.status_code}")
-            return {}
-    except Exception as e:
-        print(f"    [ERROR] GDELT search failed: {e}")
-        return {}
+
+    return {}
 
 # Known non-business words to filter out
 NON_BUSINESS_WORDS = {
