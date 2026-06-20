@@ -18,6 +18,7 @@ from core.context_manager import context_manager
 from core.loop_detector import loop_detector
 from core.quality_filter import quality_filter
 from core.telemetry import telemetry
+from trust.api import trust_app
 
 # ── Lifespan ─────────────────────────────────────────────
 @asynccontextmanager
@@ -47,6 +48,7 @@ async def lifespan(app: FastAPI):
     print("NEXUS shut down.")
 
 app = FastAPI(title="NEXUS", description="Multi-Agent Collaboration Infrastructure", lifespan=lifespan)
+app.mount("/trust", trust_app)
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
