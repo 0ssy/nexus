@@ -57,6 +57,18 @@ async def run_worldbank():
         log(f"World Bank failed: {e}")
         return 0
 
+async def run_sec_edgar():
+    """Run SEC EDGAR collector."""
+    try:
+        log("Starting SEC EDGAR collector...")
+        from trust.collectors.sec_edgar import run_collector
+        count = await run_collector(max_filings=100)
+        log(f"SEC EDGAR complete — {count} filings processed")
+        return count
+    except Exception as e:
+        log(f"SEC EDGAR failed: {e}")
+        return 0
+
 async def print_stats():
     """Print database statistics."""
     try:
@@ -79,6 +91,7 @@ async def run_cycle():
     # Collect from all sources
     await run_gdelt()
     await run_worldbank()
+    await run_sec_edgar()
 
     # Score
     await run_scorer()
