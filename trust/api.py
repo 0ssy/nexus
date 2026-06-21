@@ -12,7 +12,7 @@ Endpoints:
     POST /trust/report              — Submit a business for monitoring
 """
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from datetime import datetime
@@ -20,6 +20,7 @@ from typing import Optional
 import asyncio
 import os
 from dotenv import load_dotenv
+from trust.auth import get_api_key, create_new_api_key, create_api_key_table
 
 load_dotenv()
 
@@ -29,6 +30,11 @@ trust_app = FastAPI(
     description="Global business trust intelligence — powered by Nanobits",
     version="0.1.0"
 )
+
+
+@trust_app.on_event("startup")
+async def startup():
+    await create_api_key_table()
 
 trust_app.add_middleware(
     CORSMiddleware,
@@ -50,7 +56,7 @@ async def health():
 
 # ── Business Lookup ───────────────────────────────────────
 @trust_app.get("/business/{name}")
-async def get_business_trust(name: str):
+async def get_business_trust(name: str, key_info: dict = Depends(get_api_key)):
     """
     Look up trust score for a business by name.
     Returns trust score, risk level, signals, and trend.
@@ -116,7 +122,8 @@ async def get_business_trust(name: str):
 async def search_businesses(
     q: str = Query(..., description="Business name to search"),
     country: Optional[str] = Query(None, description="Filter by country code (e.g. GB, KE)"),
-    limit: int = Query(10, le=50)
+    limit: int = Query(10, le=50),
+    key_info: dict = Depends(get_api_key)
 ):
     """Search businesses in the trust database."""
     from trust.database import get_pool
@@ -172,7 +179,8 @@ async def search_businesses(
 async def get_by_risk(
     level: str,
     country: Optional[str] = Query(None),
-    limit: int = Query(20, le=100)
+    limit: int = Query(20, le=100),
+    key_info: dict = Depends(get_api_key)
 ):
     """
     Get businesses by risk level.
@@ -311,4 +319,42 @@ async def report_business(payload: dict):
         "message": f"{name} has been added to monitoring queue",
         "business_id": business_id,
         "note": "Trust score will be calculated as signals are collected"
+    }
+
+
+# ── API Key Registration ──────────────────────────────────
+@trust_app.post("/keys/register")
+async def register_api_key(payload: dict):
+    """
+    Register for a free API key.
+    Free tier: 100 requests/day.
+    """
+    name = payload.get("name", "").strip()
+    email = payload.get("email", "").strip()
+
+    if not name or not email:
+        raise HTTPException(
+            status_code=400,
+            detail="Both 'name' and 'email' are required"
+        )
+
+    if "@" not in email:
+        raise HTTPException(
+            status_code=400,
+            detail="Valid email required"
+        )
+
+    result = await create_new_api_key(name=name, email=email, tier="free")
+    return result
+
+
+@trust_app.get("/keys/usage")
+async def check_usage(key_info: dict = Depends(get_api_key)):
+    """Check your API key usage."""
+    return {
+        "name": key_info["name"],
+        "tier": key_info["tier"],
+        "requests_today": key_info["requests_today"],
+        "daily_limit": key_info["daily_limit"],
+        "remaining_today": key_info["remaining"]
     }
